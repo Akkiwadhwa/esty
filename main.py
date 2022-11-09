@@ -45,4 +45,5 @@ with concurrent.futures.ThreadPoolExecutor(32) as executor:
     results = list(tqdm(executor.map(etsy, range(1, total_pages + 1)), total=total_pages))
     for i in results:
         df = pd.DataFrame(i)
+
         df.to_csv("data.csv")
