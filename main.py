@@ -1,12 +1,8 @@
 from datetime import date
-from datetime import datetime
 from datetime import timedelta
-
 import mysql.connector
-import pandas as pd
 import requests
 from bs4 import BeautifulSoup
-from tqdm import tqdm
 
 mydb = mysql.connector.connect(
     host="localhost",
@@ -16,75 +12,101 @@ mydb = mysql.connector.connect(
 )
 mycursor = mydb.cursor(buffered=True)
 
-
-def etsy():
-    s = "CREATE TABLE IF NOT EXISTS ETSY(Shop_Name TEXT,Sales_Data TEXT)"
+def create_table():
+    s = "CREATE TABLE IF NOT EXISTS ETSY(id INT AUTO_INCREMENT PRIMARY KEY,Shop_Name TEXT ,Sales_Data TEXT)"
     mycursor.execute(s)
     mydb.commit()
 
-    sql = "DELETE FROM ETSY"
+    sql = "ALTER table etsy add COLUMN shop_name TEXT,add COLUMN sales_data TEXT"
     mycursor.execute(sql)
     mydb.commit()
 
-    sql = "INSERT INTO ETSY(Shop_Name,Sales_Data) VALUES( %s, %s)"
+
+def etsy():
+    sql = "ALTER table etsy DROP COLUMN shop_name,drop column sales_data"
+    mycursor.execute(sql)
+    mydb.commit()
+
+    create_table()
+
+    sql = "INSERT INTO ETSY (Shop_Name,Sales_Data)  VALUES( %s, %s) "
     for x in range(1, 1250):
         r = requests.get(f"https://www.etsy.com/in-en/search/shops?order=most_relevant&page={x}")
         data = r.text
         soup = BeautifulSoup(data, 'html.parser')
         shop_names = soup.find_all(class_="wt-text-title-01 wt-text-truncate")
-        for i in shop_names:
+        for idx, i in enumerate(shop_names):
             shop_name = i.text
             try:
                 r1 = requests.get(f"https://www.etsy.com/in-en/shop/{shop_name}")
                 data1 = r1.text
                 soup1 = BeautifulSoup(data1, 'html.parser')
                 sales_num = soup1.find(class_="wt-text-caption wt-no-wrap")
-                sales = sales_num.text.split()[0]
+                sales = sales_num.text.split()[0].replace(",", "")
             except:
                 p_data = (shop_name, "No sales data")
             else:
                 p_data = (shop_name,
                           sales)
-            mycursor.execute(sql, p_data)
-            mydb.commit()
-            print(mycursor.rowcount, "lines were inserted.")
+                mycursor.execute(sql, p_data)
+                mydb.commit()
+                print(mycursor.rowcount, "lines were inserted.")
 
 
 def track():
     try:
         global date, d
+        date_last = date.today() - timedelta(days=7)
+        d = f"{date_last.day}_{date_last.month}_{date_last.year}"
+        sql_date = f"alter table ETSY drop column {d} "
+        mycursor.execute(sql_date)
+        mydb.commit()
+        print("Column Date Column Deleted")
+    except:
+        pass
+    try:
         date = date.today()
         d = f"{date.day}_{date.month}_{date.year}"
         sql = f"alter table ETSY add column {d} TEXT"
         mycursor.execute(sql)
         mydb.commit()
-        print("a")
+        print("New Date Column Added")
     except:
-        print("A")
-        for x in range(1, 1250):
-            r = requests.get(f"https://www.etsy.com/in-en/search/shops?order=most_relevant&page={x}")
-            data = r.text
-            soup = BeautifulSoup(data, 'html.parser')
-            shop_names = soup.find_all(class_="wt-text-title-01 wt-text-truncate")
-            for i in shop_names:
-                shop_name = i.text
+        pass
+
+    sql = f"select shop_name from etsy "
+    mycursor.execute(sql)
+    l1 = []
+    a = mycursor.fetchall()
+    for i in a:
+        l1.append(i[0])
+    for shop_name in l1:
+        try:
+            r1 = requests.get(f"https://www.etsy.com/in-en/shop/{shop_name}")
+            data1 = r1.text
+            soup1 = BeautifulSoup(data1, 'html.parser')
+            sales_num = soup1.find(class_="wt-text-caption wt-no-wrap")
+            sales = sales_num.text.split()[0].replace(",", "")
+        except:
+            pass
+        else:
+            sql = f"select sales_data from etsy where shop_name = '{shop_name}'"
+            mycursor.execute(sql)
+            a = mycursor.fetchall()
+            for i in a:
                 try:
-                    r1 = requests.get(f"https://www.etsy.com/in-en/shop/{shop_name}")
-                    data1 = r1.text
-                    soup1 = BeautifulSoup(data1, 'html.parser')
-                    sales_num = soup1.find(class_="wt-text-caption wt-no-wrap")
-                    sales = sales_num.text.split()[0]
+                    sales1 = int(i[0].replace(",", ""))
+                    print(sales1)
+                    sql1 = f"update etsy set {d} = {sales} - {sales1} where shop_name = '{shop_name}';"
                 except:
                     pass
                 else:
-                    sql1 = f"insert into etsy (SELECT (COUNT(sales_data) - {sales}))"
                     mycursor.execute(sql1)
                     mydb.commit()
-    else:
-        pass
+                    print(mycursor.rowcount, "datelines were inserted.")
 
-
-track()
+create_table()
+etsy()
 # # taking input as the current date
 # # today() method is supported by date
 # # class in datetime module
@@ -100,3 +122,8 @@ track()
 # # printing end date
 # print("Ending date")
 # print(Enddate)
+date = date.today() - timedelta(days=6)
+
+print(date)
+d = f"{date.day}_{date.month}_{date.year}"
+print(d)
