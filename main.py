@@ -12,6 +12,7 @@ mydb = mysql.connector.connect(
 )
 mycursor = mydb.cursor(buffered=True)
 
+
 def create_table():
     s = "CREATE TABLE IF NOT EXISTS ETSY(id INT AUTO_INCREMENT PRIMARY KEY,Shop_Name TEXT ,Sales_Data TEXT)"
     mycursor.execute(s)
@@ -51,6 +52,9 @@ def etsy():
                 mycursor.execute(sql, p_data)
                 mydb.commit()
                 print(mycursor.rowcount, "lines were inserted.")
+    sql = "DELETE FROM etsy where shop_name IS NULL"
+    mycursor.execute(sql)
+    mydb.commit()
 
 
 def track():
@@ -105,25 +109,7 @@ def track():
                     mydb.commit()
                     print(mycursor.rowcount, "datelines were inserted.")
 
+
 create_table()
 etsy()
-# # taking input as the current date
-# # today() method is supported by date
-# # class in datetime module
-# Begindatestring = date.today()
-#
-# # print begin date
-# print("Beginning date")
-# print(Begindatestring)
-#
-# # calculating end date by adding 4 days
-# Enddate = Begindatestring - timedelta(days=4)
-#
-# # printing end date
-# print("Ending date")
-# print(Enddate)
-date = date.today() - timedelta(days=6)
-
-print(date)
-d = f"{date.day}_{date.month}_{date.year}"
-print(d)
+track()
