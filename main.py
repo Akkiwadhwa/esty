@@ -17,16 +17,21 @@ def create_table():
     s = "CREATE TABLE IF NOT EXISTS ETSY(id INT AUTO_INCREMENT PRIMARY KEY,Shop_Name TEXT ,Sales_Data TEXT)"
     mycursor.execute(s)
     mydb.commit()
-
-    sql = "ALTER table etsy add COLUMN shop_name TEXT,add COLUMN sales_data TEXT"
-    mycursor.execute(sql)
-    mydb.commit()
+    try:
+        sql = "ALTER table etsy add COLUMN shop_name TEXT,add COLUMN sales_data TEXT"
+        mycursor.execute(sql)
+        mydb.commit()
+    except:
+        pass
 
 
 def etsy():
-    sql = "ALTER table etsy DROP COLUMN shop_name,drop column sales_data"
-    mycursor.execute(sql)
-    mydb.commit()
+    try:
+        sql = "ALTER table etsy DROP COLUMN shop_name,drop column sales_data"
+        mycursor.execute(sql)
+        mydb.commit()
+    except:
+        pass
 
     create_table()
 
@@ -110,6 +115,6 @@ def track():
                     print(mycursor.rowcount, "datelines were inserted.")
 
 
-create_table()
-etsy()
+# create_table()
+# etsy()
 track()
